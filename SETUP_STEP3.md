@@ -78,8 +78,9 @@ public class Orb : MonoBehaviour
 
     void Awake()
     {
-        rb        = GetComponent<Rigidbody2D>();
-        orbRadius = GetComponent<CircleCollider2D>().radius * transform.localScale.x;
+        rb         = GetComponent<Rigidbody2D>();
+        // bounds.extents.x is the true world-space radius — already accounts for scale
+        orbRadius  = GetComponent<CircleCollider2D>().bounds.extents.x;
         halfHeight = Camera.main.orthographicSize;
         halfWidth  = halfHeight * Camera.main.aspect;
     }
@@ -130,8 +131,8 @@ public class Orb : MonoBehaviour
 
         if (bounced)
         {
+            rb.position = pos; // direct teleport — MovePosition applies a force on Dynamic bodies, not a position set
             rb.velocity = vel;
-            rb.MovePosition(pos);
         }
     }
 }
