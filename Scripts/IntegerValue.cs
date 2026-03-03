@@ -4,26 +4,26 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "IntegerValue", menuName = "Scriptable Objects/IntegerValue")]
 public class IntegerValue : ScriptableObject
 {
-    [SerializeField] private int Value;
+    [SerializeField] private int DefaultValue;
 
-    public int Current { get; private set; }
+    public int Value { get; private set; }
 
     public event Action<int> OnChange;
 
     void OnEnable()
     {
-        Current = Value;
+        Value = DefaultValue;
     }
 
     public void Set(int value)
     {
-        Current = value;
-        OnChange?.Invoke(Current);
+        Value = value;
+        OnChange?.Invoke(Value);
     }
 
     public void Reset()
     {
-        Current = Value;
-        OnChange?.Invoke(Current);
+        Value = DefaultValue;
+        OnChange?.Invoke(Value);
     }
 }

@@ -3,10 +3,13 @@ using UnityEngine.UIElements;
 
 public class GameOverUI : MonoBehaviour
 {
+    [SerializeField] private IntegerValue score;
+
     [SerializeField] private GameEvent gameOverEvent;
     [SerializeField] private GameEvent gameStartEvent;
 
     private VisualElement overlay;
+    private Label finalScoreLabel;
     private Button restartBtn;
     private Button exitBtn;
 
@@ -15,6 +18,7 @@ public class GameOverUI : MonoBehaviour
         var root = GetComponent<UIDocument>().rootVisualElement;
 
         overlay = root.Q<VisualElement>("game-over-overlay");
+        finalScoreLabel = root.Q<Label>("final-score-label");
         restartBtn = root.Q<Button>("restart-btn");
         exitBtn = root.Q<Button>("exit-btn");
 
@@ -36,7 +40,12 @@ public class GameOverUI : MonoBehaviour
         gameStartEvent.OnRaised -= OnGameStart;
     }
 
-    private void OnGameOver() => overlay.style.display = DisplayStyle.Flex;
+    private void OnGameOver()
+    {
+        finalScoreLabel.text = $"SCORE  {score.Value}";
+        overlay.style.display = DisplayStyle.Flex;
+    }
+
     private void OnGameStart() => overlay.style.display = DisplayStyle.None;
 
     private void OnRestartClicked() => gameStartEvent.Raise();

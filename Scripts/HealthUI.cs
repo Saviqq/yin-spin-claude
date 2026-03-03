@@ -19,7 +19,7 @@ public class HealthUI : MonoBehaviour
         };
 
         health.OnChange += OnHealthChange;
-        OnHealthChange(health.Current);
+        OnHealthChange(health.Value);
     }
 
     void OnDisable()

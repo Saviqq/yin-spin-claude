@@ -3,6 +3,7 @@ using UnityEngine;
 public class PlayerController : MonoBehaviour
 {
     [SerializeField] private IntegerValue health;
+    [SerializeField] private IntegerValue score;
 
     [SerializeField] private float moveSpeed = 5f;
     [SerializeField] private float rotateSpeed = 180f;
@@ -16,7 +17,6 @@ public class PlayerController : MonoBehaviour
     private Material splitMaterial;
     private float leftBound;
     private float rightBound;
-    private int score = 0;
 
     private bool isActive = true;
 
@@ -68,14 +68,13 @@ public class PlayerController : MonoBehaviour
             colorRatio += orb.IsWhite ? collectDelta : -collectDelta;
             colorRatio = Mathf.Clamp01(colorRatio);
             splitMaterial.SetFloat("_ColorRatio", colorRatio);
-            score++;
-            Debug.Log($"Collected! Score: {score} | ColorRatio: {colorRatio:F2}");
+            score.Set(score.Value + 1);
         }
         else
         {
-            if (health.Current > 0)
+            if (health.Value > 0)
             {
-                health.Set(health.Current - 1);
+                health.Set(health.Value - 1);
             }
         }
 
@@ -135,7 +134,7 @@ public class PlayerController : MonoBehaviour
         UpdateColorRatio(0.5f);
     }
 
-    // --- Public API (used by Step 5 systems) ---
+    // --- Public API ---
 
     public void UpdateColorRatio(float newRatio)
     {
@@ -144,5 +143,4 @@ public class PlayerController : MonoBehaviour
     }
 
     public float GetColorRatio() => colorRatio;
-    public int GetScore() => score;
 }
