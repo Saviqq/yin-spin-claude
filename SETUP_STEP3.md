@@ -195,7 +195,7 @@ public class OrbSpawner : MonoBehaviour
                     Random.Range(-halfWidth, halfWidth),
                     halfHeight + spawnMargin
                 );
-                angleMin = 180f; angleMax = 360f;
+                angleMin = 210f; angleMax = 330f;
                 break;
 
             case 1: // right — orb must point leftward
@@ -203,7 +203,7 @@ public class OrbSpawner : MonoBehaviour
                     halfWidth + spawnMargin,
                     Random.Range(-halfHeight, halfHeight)
                 );
-                angleMin = 90f; angleMax = 270f;
+                angleMin = 120f; angleMax = 240f;
                 break;
 
             case 2: // bottom — orb must point upward
@@ -211,7 +211,7 @@ public class OrbSpawner : MonoBehaviour
                     Random.Range(-halfWidth, halfWidth),
                     -halfHeight - spawnMargin
                 );
-                angleMin = 0f; angleMax = 180f;
+                angleMin = 30f; angleMax = 150f;
                 break;
 
             default: // left — orb must point rightward
@@ -219,7 +219,7 @@ public class OrbSpawner : MonoBehaviour
                     -halfWidth - spawnMargin,
                     Random.Range(-halfHeight, halfHeight)
                 );
-                angleMin = -90f; angleMax = 90f;
+                angleMin = -60f; angleMax = 60f;
                 break;
         }
 

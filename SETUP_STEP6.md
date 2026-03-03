@@ -31,7 +31,7 @@ GameStartEvent ──► GameManager       health.Reset()
 
 | File | Change |
 |------|--------|
-| `GameEventSO.cs` | New — reusable SO event |
+| `GameEvent.cs` | New — reusable SO event |
 | `GameOverEvent.asset` | New — instance |
 | `GameStartEvent.asset` | New — instance |
 | `GameManager.cs` | New — wiring between health, GameOver, GameStart |
@@ -45,14 +45,14 @@ GameStartEvent ──► GameManager       health.Reset()
 
 ---
 
-## 1. GameEventSO.cs
+## 1. GameEvent.cs
 
 ```csharp
 using System;
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "GameEvent", menuName = "Scriptable Objects/GameEvent")]
-public class GameEventSO : ScriptableObject
+public class GameEvent : ScriptableObject
 {
     public event Action OnRaised;
 
@@ -62,6 +62,8 @@ public class GameEventSO : ScriptableObject
     }
 }
 ```
+
+> Note: the class is named `GameEvent` (not `GameEventSO`). All references in `PlayerController`, `OrbSpawner`, `Orb`, `GameManager`, and `GameOverUI` use `GameEvent`.
 
 Simple signal — no data, no logic. `Raise()` fires `OnRaised`. Subscribers register and unregister themselves.
 
@@ -101,19 +103,26 @@ using UnityEngine;
 public class GameManager : MonoBehaviour
 {
     [SerializeField] private IntegerValue health;
-    [SerializeField] private GameEventSO  gameOverEvent;
-    [SerializeField] private GameEventSO  gameStartEvent;
+    [SerializeField] private GameEvent    gameOverEvent;
+    [SerializeField] private GameEvent    gameStartEvent;
+
+    void Start()
+    {
+        Cursor.visible = false;
+    }
 
     void OnEnable()
     {
-        health.OnChange         += OnHealthChanged;
-        gameStartEvent.OnRaised += OnGameStart;
+        health.OnChange          += OnHealthChanged;
+        gameOverEvent.OnRaised   += OnGameOver;
+        gameStartEvent.OnRaised  += OnGameStart;
     }
 
     void OnDisable()
     {
-        health.OnChange         -= OnHealthChanged;
-        gameStartEvent.OnRaised -= OnGameStart;
+        health.OnChange          -= OnHealthChanged;
+        gameOverEvent.OnRaised   -= OnGameOver;
+        gameStartEvent.OnRaised  -= OnGameStart;
     }
 
     private void OnHealthChanged(int current)
@@ -122,9 +131,15 @@ public class GameManager : MonoBehaviour
             gameOverEvent.Raise();
     }
 
+    private void OnGameOver()
+    {
+        Cursor.visible = true;
+    }
+
     private void OnGameStart()
     {
         health.Reset();
+        Cursor.visible = false;
     }
 }
 ```
@@ -153,8 +168,8 @@ using UnityEngine.UIElements;
 
 public class GameOverUI : MonoBehaviour
 {
-    [SerializeField] private GameEventSO gameOverEvent;
-    [SerializeField] private GameEventSO gameStartEvent;
+    [SerializeField] private GameEvent gameOverEvent;
+    [SerializeField] private GameEvent gameStartEvent;
 
     private VisualElement overlay;
     private Button        restartBtn;
@@ -302,8 +317,8 @@ Note: `display: none` is set on `.game-over-overlay` in USS as the default state
 
 Add fields:
 ```csharp
-[SerializeField] private GameEventSO gameOverEvent;
-[SerializeField] private GameEventSO gameStartEvent;
+[SerializeField] private GameEvent gameOverEvent;
+[SerializeField] private GameEvent gameStartEvent;
 
 private bool isActive = true;
 ```
@@ -322,8 +337,14 @@ void OnDisable()
     gameStartEvent.OnRaised -= OnGameStart;
 }
 
-private void OnGameOver()  => isActive = false;
-private void OnGameStart() => isActive = true;
+private void OnGameOver() => isActive = false;
+
+private void OnGameStart()
+{
+    isActive = true;
+    transform.position = Vector2.zero;
+    UpdateColorRatio(0.5f);
+}
 ```
 
 Gate input in `FixedUpdate` and `OnTriggerEnter2D`:
@@ -350,8 +371,8 @@ Assign `GameOverEvent` and `GameStartEvent` assets in the Player Inspector.
 
 Add fields:
 ```csharp
-[SerializeField] private GameEventSO gameOverEvent;
-[SerializeField] private GameEventSO gameStartEvent;
+[SerializeField] private GameEvent gameOverEvent;
+[SerializeField] private GameEvent gameStartEvent;
 
 private bool isSpawning = true;
 ```
@@ -401,7 +422,7 @@ Assign assets in the OrbSpawner Inspector.
 
 Add field:
 ```csharp
-[SerializeField] private GameEventSO gameStartEvent;
+[SerializeField] private GameEvent gameStartEvent;
 ```
 
 Add subscribe/unsubscribe:
