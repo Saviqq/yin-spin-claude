@@ -22,7 +22,7 @@ The player controls a circle split 50/50 black and white. Smaller circles (black
 | Input | Action |
 |-------|--------|
 | A / D | Move left / right (horizontal only, no vertical movement) |
-| Mouse | Rotate the player circle around its own axis |
+| ← / → | Rotate the player circle left / right |
 
 ---
 

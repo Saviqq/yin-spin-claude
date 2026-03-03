@@ -50,6 +50,7 @@ using UnityEngine;
 public class PlayerController : MonoBehaviour
 {
     [SerializeField] private float moveSpeed    = 5f;
+    [SerializeField] private float rotateSpeed  = 180f;
     [SerializeField] private float colorRatio   = 0.5f;
     [SerializeField] private float collectDelta = 0.1f;
 
@@ -73,14 +74,10 @@ public class PlayerController : MonoBehaviour
         rightBound =  camHalfWidth - playerRadius;
     }
 
-    void Update()
-    {
-        RotateTowardsMouse();
-    }
-
     void FixedUpdate()
     {
         MoveHorizontal();
+        HandleRotation();
     }
 
     void OnTriggerEnter2D(Collider2D other)
@@ -110,12 +107,13 @@ public class PlayerController : MonoBehaviour
 
     // --- Private ---
 
-    void RotateTowardsMouse()
+    void HandleRotation()
     {
-        Vector3 mouseWorld = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        Vector3 dir        = mouseWorld - transform.position;
-        float   angle      = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
-        rb.MoveRotation(angle);
+        float input = 0f;
+        if (Input.GetKey(KeyCode.LeftArrow))       input =  1f; // counter-clockwise
+        else if (Input.GetKey(KeyCode.RightArrow)) input = -1f; // clockwise
+
+        rb.MoveRotation(rb.rotation + input * rotateSpeed * Time.fixedDeltaTime);
     }
 
     void MoveHorizontal()

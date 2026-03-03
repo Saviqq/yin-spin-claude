@@ -4,6 +4,8 @@ Goal: Player circle rotates to face the mouse (free 360°) and visually renders 
 
 ---
 
+> **Note:** Mouse rotation was replaced with keyboard rotation (← / → arrow keys) after playtesting. The angle-check math in Step 4 is unaffected. See the updated `PlayerController` in `SETUP_STEP4.md` for the current implementation.
+
 ## What Changes From Step 1
 
 | Thing | Step 1 | Step 2 |
