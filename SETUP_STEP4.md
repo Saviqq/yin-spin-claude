@@ -49,6 +49,8 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
+    [SerializeField] private IntegerValue Health;
+
     [SerializeField] private float moveSpeed    = 5f;
     [SerializeField] private float rotateSpeed  = 180f;
     [SerializeField] private float colorRatio   = 0.5f;
@@ -98,8 +100,8 @@ public class PlayerController : MonoBehaviour
         }
         else
         {
-            // Wrong color — health penalty comes in Step 5
-            Debug.Log($"Wrong color! Orb: {(orb.IsWhite ? "white" : "black")} | Hit half: {(hitWhiteHalf ? "white" : "black")}");
+            if (Health.Current > 0)
+                Health.Set(Health.Current - 1);
         }
 
         Destroy(other.gameObject);

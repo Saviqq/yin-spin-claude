@@ -1,37 +1,33 @@
 # Step 5 — Health System & HUD (UI Toolkit)
 
-Goal: 3-heart health system backed by a ScriptableObject, displayed in a top bar HUD using UI Toolkit. Wrong-color orb contact calls `TakeDamage()` on the SO, which fires an event the UI listens to. Score display slot is wired up but left empty — filled in Step 6.
+Goal: 3-heart health system using a reusable `IntegerValue` ScriptableObject, displayed in a top bar HUD via UI Toolkit. Wrong-color orb contact decrements health. Also covers the camera viewport fix required to keep orb bounds aligned with the gameplay area below the HUD.
 
 ---
 
 ## Architecture
 
 ```
-PlayerController ──TakeDamage()──► HealthSO ──onHealthChanged──► HealthUI
-                                       │
-                                  onGameOver  (Step 6)
+PlayerController ──Health.Set()──► IntegerValue ──OnChange──► HealthUI
 ```
 
-- `HealthSO` is a ScriptableObject **asset** — shared reference, no scene dependency
-- `PlayerController` holds a reference → writes (TakeDamage)
-- `HealthUI` holds a reference → reads (CurrentHearts) and listens (event)
-- Neither system knows about the other — HealthSO is the only coupling point
+- `IntegerValue` is a generic ScriptableObject — holds any integer value with a reset and a change event
+- Reusable: the same class will be used for score later
+- `PlayerController` writes → `HealthUI` reads and listens
+- Neither knows about the other — `IntegerValue` is the only coupling point
 
 ---
 
-## Files to Create
+## Files Created
 
 | File | Type |
 |------|------|
-| `HealthSO.cs` | ScriptableObject script |
-| `HealthData.asset` | HealthSO instance (created in editor) |
+| `IntegerValue.cs` | Reusable ScriptableObject |
+| `HealthData.asset` | IntegerValue instance for health (Value = 3) |
 | `HUD.uxml` | UI Toolkit layout |
 | `HUD.uss` | UI Toolkit styles |
-| `HealthUI.cs` | MonoBehaviour on the UIDocument GameObject |
+| `HealthUI.cs` | MonoBehaviour on UIDocument GameObject |
 
-Plus updates to `PlayerController.cs`.
-
-Suggested folder layout (create if missing):
+Folder layout:
 ```
 Assets/
   Scripts/
@@ -44,70 +40,59 @@ Assets/
 
 ---
 
-## 1. HealthSO.cs
+## 1. IntegerValue.cs
+
+A generic reusable ScriptableObject for any tracked integer (health, score, etc.).
 
 ```csharp
 using System;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "HealthData", menuName = "Game/Health")]
-public class HealthSO : ScriptableObject
+[CreateAssetMenu(fileName = "IntegerValue", menuName = "Scriptable Objects/IntegerValue")]
+public class IntegerValue : ScriptableObject
 {
-    [SerializeField] private int maxHearts = 3;
+    [SerializeField] private int Value;
 
-    // Runtime-only — not serialized, resets each play session via OnEnable
-    private int currentHearts;
+    public int Current { get; private set; }
 
-    public int CurrentHearts => currentHearts;
-    public int MaxHearts     => maxHearts;
+    public event Action<int> OnChange;
 
-    // Subscribers re-register each session from their own Start/OnEnable
-    public event Action OnHealthChanged;
-    public event Action OnGameOver;
-
-    // Called automatically when the SO is loaded (entering Play mode)
     void OnEnable()
     {
-        currentHearts = maxHearts;
+        Current = Value;
     }
 
-    public void TakeDamage()
+    public void Set(int value)
     {
-        if (currentHearts <= 0) return;
-
-        currentHearts--;
-        OnHealthChanged?.Invoke();
-
-        if (currentHearts <= 0)
-            OnGameOver?.Invoke();
+        Current = value;
+        OnChange?.Invoke(Current);
     }
 }
 ```
 
-**Why `OnEnable` for reset:**
-ScriptableObjects persist in memory across play sessions in the Editor. `OnEnable` fires each time the asset is loaded into memory, which includes entering Play mode. This guarantees `currentHearts` always starts at `maxHearts` — no manual initialization call needed.
+**Key design:**
+- `Value` (serialized) — the initial/reset value, set in the Inspector on the asset
+- `Current` (runtime, private set) — the live value during play
+- `OnEnable()` resets `Current = Value` each time Play mode starts
+- `OnChange` passes the new value directly (`Action<int>`) — subscribers get the value without needing to read it back from the SO
+- `Set()` is the only write path — always fires the event, keeping UI in sync
 
-> **Note:** If your project has **Enter Play Mode Settings → Domain Reload disabled** (Project Settings → Editor), `OnEnable` may not fire. If you see hearts not resetting, go to Edit → Project Settings → Editor and ensure `Reload Domain` is checked.
+**Reuse for score:** Create a second `IntegerValue` asset (e.g. `ScoreData.asset`, `Value = 0`) and wire it up the same way.
 
 ---
 
 ## 2. Create the HealthData Asset
 
-In the Project window: right-click → **Create → Game → Health**.
-Name it `HealthData`, save it inside `Assets/ScriptableObjects/`.
-
-This asset is what both `PlayerController` and `HealthUI` will reference in the Inspector.
+Right-click in `Assets/ScriptableObjects/` → **Create → Scriptable Objects → IntegerValue**.
+Name it `HealthData`. In the Inspector set **Value** to `3`.
 
 ---
 
 ## 3. HUD.uxml
 
-In the Project window: right-click inside `Assets/UI/` → **Create → UI Toolkit → UI Document**. Name it `HUD`.
-
-Delete all default content and paste:
-
 ```xml
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <Style src="HUD.uss" />
     <ui:VisualElement name="top-bar" class="top-bar">
 
         <ui:VisualElement name="hearts-container" class="hud-section">
@@ -123,16 +108,11 @@ Delete all default content and paste:
 </ui:UXML>
 ```
 
-Hearts are indexed 0–2 to match `CurrentHearts` comparisons in code (`i < currentHearts`).
-
 ---
 
 ## 4. HUD.uss
 
-Right-click inside `Assets/UI/` → **Create → UI Toolkit → Style Sheet**. Name it `HUD`.
-
 ```css
-/* ── Top bar ─────────────────────────────────────────── */
 .top-bar {
     width: 100%;
     height: 10%;
@@ -146,13 +126,11 @@ Right-click inside `Assets/UI/` → **Create → UI Toolkit → Style Sheet**. N
     border-bottom-color: rgb(255, 255, 255);
 }
 
-/* ── Section wrapper (hearts left, score right) ──────── */
 .hud-section {
     flex-direction: row;
     align-items: center;
 }
 
-/* ── Individual heart label ──────────────────────────── */
 .heart {
     font-size: 28px;
     color: rgb(255, 255, 255);
@@ -160,40 +138,27 @@ Right-click inside `Assets/UI/` → **Create → UI Toolkit → Style Sheet**. N
     -unity-text-align: middle-center;
 }
 
-/* Lost heart — same symbol, dimmed */
 .heart--lost {
     color: rgba(255, 255, 255, 0.2);
 }
 ```
 
-`justify-content: space-between` on `.top-bar` means hearts sit at the left edge and the (future) score sits at the right edge automatically.
-
 ---
 
-## 5. Create Panel Settings (if none exists)
+## 5. Panel Settings & HUD GameObject
 
-In the Project window: right-click → **Create → UI Toolkit → Panel Settings Asset**. Name it `GamePanelSettings`.
-
-In the Inspector:
+If no PanelSettings asset exists:
+Right-click in Project → **Create → UI Toolkit → Panel Settings Asset**, name it `GamePanelSettings`.
 - **Scale Mode:** `Scale With Screen Size`
 - **Reference Resolution:** `1920 x 1080`
-- **Screen Match Mode:** `Match Width Or Height`, slider at `0.5`
+
+In the Hierarchy: **Create Empty** → name it `HUD`.
+- Add **UI Document** component → assign `GamePanelSettings` and `HUD.uxml`
+- Add **HealthUI** script (below) → assign `HealthData` asset
 
 ---
 
-## 6. Create the HUD GameObject
-
-In the Hierarchy: right-click → **Create Empty**, name it `HUD`.
-
-Add **UI Document** component:
-- **Panel Settings:** assign `GamePanelSettings`
-- **Source Asset:** assign `HUD.uxml`
-
-Then add the `HealthUI` script (created next) to the same GameObject.
-
----
-
-## 7. HealthUI.cs
+## 6. HealthUI.cs
 
 ```csharp
 using UnityEngine;
@@ -201,7 +166,7 @@ using UnityEngine.UIElements;
 
 public class HealthUI : MonoBehaviour
 {
-    [SerializeField] private HealthSO healthData;
+    [SerializeField] private IntegerValue Health;
 
     private Label[] heartLabels;
 
@@ -216,91 +181,95 @@ public class HealthUI : MonoBehaviour
             root.Q<Label>("heart-2"),
         };
 
-        healthData.OnHealthChanged += RefreshHearts;
-        RefreshHearts();
+        Health.OnChange += OnHealthChange;
+        OnHealthChange(Health.Current);
     }
 
     void OnDisable()
     {
-        healthData.OnHealthChanged -= RefreshHearts;
+        Health.OnChange -= OnHealthChange;
     }
 
-    void RefreshHearts()
+    private void OnHealthChange(int currentHealth)
     {
         for (int i = 0; i < heartLabels.Length; i++)
         {
-            bool filled = i < healthData.CurrentHearts;
+            bool filled = i < currentHealth;
             heartLabels[i].EnableInClassList("heart--lost", !filled);
         }
     }
 }
 ```
 
-**Notes:**
-- `OnEnable` / `OnDisable` for subscribe/unsubscribe — this is the correct pattern for event cleanup. Avoids stale subscribers if the GameObject is disabled and re-enabled.
-- `EnableInClassList("heart--lost", !filled)` toggles the dim style class. The ♥ symbol stays the same — only opacity changes.
-- `root.Q<Label>("heart-0")` queries the UXML by the `name` attribute.
+`OnHealthChange` receives the new value directly from the `Action<int>` event — no need to re-read from the SO.
 
 ---
 
-## 8. Assign the USS to the UXML
+## 7. PlayerController Changes
 
-Open `HUD.uxml` in the **UI Builder** (double-click it):
-- In the StyleSheets panel (top left), click **+** → **Add Existing USS** → select `HUD.uss`
-- Save
-
-Alternatively, add this line at the top of `HUD.uxml` manually:
-```xml
-<Style src="HUD.uss" />
-```
-Place it as the first child of the root `<ui:UXML>` element.
-
----
-
-## 9. Update PlayerController.cs
-
-Three small changes only:
-
-**Add field** (with the other SerializeFields at the top):
+Add the `Health` field:
 ```csharp
-[SerializeField] private HealthSO healthData;
+[SerializeField] private IntegerValue Health;
 ```
 
-**Replace the wrong-color `Debug.Log`** in `OnTriggerEnter2D`:
+In `OnTriggerEnter2D`, wrong-color branch:
 ```csharp
-// Was:
-Debug.Log($"Wrong color! ...");
-
-// Now:
-healthData.TakeDamage();
+if (Health.Current > 0)
+    Health.Set(Health.Current - 1);
 ```
 
-**Assign in Inspector:** select the `Player` GameObject → drag `HealthData` asset into the `Health Data` slot.
-
-Do the same for the `HUD` GameObject's `HealthUI` component.
+Assign `HealthData` asset to the `Health` slot on the Player Inspector.
 
 ---
 
-## 10. Verify It Works
+## 8. Camera Viewport Fix — Gameplay Area Bounds
 
-Hit **Play**.
+### The Problem
+The top bar takes 10% of screen height. `Orb.cs` and `OrbSpawner.cs` compute bounds using `Camera.main.orthographicSize`, which by default covers the **full screen**. This means:
+- Orbs spawn and bounce at the very top of the screen, behind the UI bar
+- The gameplay area is actually only 90% of the screen height
+
+### The Fix — Camera Viewport Rect
+
+**No code changes needed.** Unity's camera `Viewport Rect` restricts the camera's rendered region to a portion of the screen. When set to 90% height, `Camera.main.orthographicSize` and `Camera.main.aspect` automatically reflect the gameplay area dimensions — all existing bounds calculations in `Orb.cs`, `OrbSpawner.cs`, and `PlayerController.cs` become correct with zero changes.
+
+**Steps:**
+1. Select **Main Camera** in the Hierarchy
+2. In the Inspector → **Camera** component → **Viewport Rect**:
+
+| Field | Value |
+|-------|-------|
+| X | `0` |
+| Y | `0` |
+| W | `1` |
+| H | `0.9` |
+
+The camera now renders from the bottom of the screen up to 90% height. The top 10% is covered by the UI Toolkit HUD.
+
+### Why This Works
+
+`Camera.main.orthographicSize` is the world-space half-height of the camera's **rendered viewport**, not the screen. When viewport H = 0.9:
+
+- `halfHeight = Camera.main.orthographicSize` → world-space top/bottom of gameplay area ✅
+- `halfWidth = halfHeight * Camera.main.aspect` → `aspect` also updates to reflect the viewport proportions ✅
+- Top spawn edge: `halfHeight + spawnMargin` → just above the gameplay area, behind the UI bar ✅
+- Top bounce wall: `halfHeight - orbRadius` → bounces at the bottom of the UI bar ✅
+
+### Note on Aspect Ratio
+With viewport H=0.9, the gameplay area is slightly wider in world units than a full-screen 16:9 camera at the same orthographic size (same width, shorter height = wider aspect ratio). This is correct and expected — adjust orthographic size in the Camera Inspector if the gameplay area feels too wide.
+
+---
+
+## Verify It Works
 
 | Test | Expected |
 |------|----------|
-| Top bar visible | Black strip with white bottom border, 3 white ♥ across the top-left |
-| Wrong-color orb contact | One heart dims immediately |
-| Second wrong contact | Two hearts dimmed |
-| Third wrong contact | All three dimmed — `OnGameOver` fires (no response yet, Step 6) |
-| Re-enter Play mode | All 3 hearts restored (OnEnable reset) |
-
-Open the **UI Debugger** (`Window → UI Toolkit → Debugger`) and select the HUD panel if the layout looks off — it lets you inspect the element tree and live-edit styles.
-
----
-
-## What's Deliberately Left Out of This Step
-- Game over screen / restart (Step 6)
-- Score display (Step 6)
-- Difficulty ramp / spawn rate scaling (Step 6)
+| Top bar visible | Black strip, white border, 3 ♥ top-left |
+| Wrong-color contact | One heart dims |
+| 3 wrong contacts | All hearts dimmed |
+| Re-enter Play | All 3 hearts restored |
+| Orbs near top of screen | Bounce off the bottom of the UI bar, not off screen top |
+| Orbs spawn from top edge | Appear from behind UI bar, not from screen top |
 
 ---
 
@@ -312,5 +281,5 @@ Open the **UI Debugger** (`Window → UI Toolkit → Debugger`) and select the H
 | `SETUP_STEP2.md` | Shader + rotation |
 | `SETUP_STEP3.md` | Orb spawning + bouncing |
 | `SETUP_STEP4.md` | Collection mechanic + ratio shifting |
-| `SETUP_STEP5.md` | This file — health SO + HUD |
+| `SETUP_STEP5.md` | This file — IntegerValue SO + HUD + camera viewport fix |
 | `SETUP_STEP6.md` | _(next) Score, game over, difficulty_ |

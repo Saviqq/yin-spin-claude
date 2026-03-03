@@ -90,7 +90,7 @@ public class Orb : MonoBehaviour
     {
         IsWhite = isWhite;
         GetComponent<SpriteRenderer>().color = isWhite ? Color.white : Color.black;
-        rb.velocity = direction.normalized * speed;
+        rb.linearVelocity = direction.normalized * speed;
 
         Destroy(gameObject, Random.Range(minLifetime, maxLifetime));
     }
@@ -98,7 +98,7 @@ public class Orb : MonoBehaviour
     void FixedUpdate()
     {
         Vector2 pos = rb.position;
-        Vector2 vel = rb.velocity;
+        Vector2 vel = rb.linearVelocity;
         bool bounced = false;
 
         // Left / right walls
@@ -132,7 +132,7 @@ public class Orb : MonoBehaviour
         if (bounced)
         {
             rb.position = pos; // direct teleport — MovePosition applies a force on Dynamic bodies, not a position set
-            rb.velocity = vel;
+            rb.linearVelocity = vel;
         }
     }
 }
@@ -157,7 +157,7 @@ using UnityEngine;
 
 public class OrbSpawner : MonoBehaviour
 {
-    [SerializeField] private GameObject orbPrefab;
+    [SerializeField] private Orb orbPrefab;
     [SerializeField] private float      spawnInterval = 2f;
     [SerializeField] private float      spawnMargin   = 0.3f; // how far outside screen to spawn
 
@@ -228,8 +228,8 @@ public class OrbSpawner : MonoBehaviour
         float   angleRad = angleDeg * Mathf.Deg2Rad;
         Vector2 direction = new Vector2(Mathf.Cos(angleRad), Mathf.Sin(angleRad));
 
-        bool     isWhite = Random.value > 0.5f;
-        GameObject orb   = Instantiate(orbPrefab, spawnPos, Quaternion.identity);
+        bool isWhite = Random.value > 0.5f;
+        Orb orb = Instantiate(orbPrefab, spawnPos, Quaternion.identity);
         orb.GetComponent<Orb>().Initialize(isWhite, direction);
     }
 }
