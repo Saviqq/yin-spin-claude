@@ -14,7 +14,22 @@ This step implements **Axis 1 only**: as time passes, `halfWidthPlayArea` shrink
 ### What stays the same
 - `OrbManager` — `spawnInterval` and `orbSpeed` remain as serialized fields
 - `OrbSpawner` — already reads `halfWidthPlayArea.Value` live, no change
-- `GameManager` — already seeds both FloatValues in `Awake`, no change
+
+### `GameManager.cs` change
+`Awake` now simply calls `OnGameStart()`, which sets both FloatValues from the camera every time it runs — on initial load and on every restart. No separate `Start` method.
+
+```csharp
+void Awake() => OnGameStart();
+
+private void OnGameStart()
+{
+    health.Reset();
+    score.Reset();
+    halfHeightPlayArea.Set(Camera.main.orthographicSize);
+    halfWidthPlayArea.Set(Camera.main.orthographicSize * Camera.main.aspect);
+    Cursor.visible = false;
+}
+```
 
 ---
 
@@ -109,26 +124,27 @@ public class DifficultyManager : MonoBehaviour
     private void BeginShrink()
     {
         shrinkFrom = halfWidthPlayArea.Value;
-        shrinkTo   = Mathf.Max(minHalfWidth, shrinkFrom - shrinkStep);
-        state      = ShrinkState.Shrinking;
-        timer      = 0f;
+        shrinkTo = Mathf.Max(minHalfWidth, shrinkFrom - shrinkStep);
+        state = ShrinkState.Shrinking;
+        timer = 0f;
     }
 
     private void UpdateWalls(float halfWidth)
     {
-        if (leftWall != null)  leftWall.position  = new Vector3(-halfWidth, 0f, 0f);
-        if (rightWall != null) rightWall.position = new Vector3( halfWidth, 0f, 0f);
+        if (leftWall != null) leftWall.position = new Vector3(-halfWidth, 0f, 0f);
+        if (rightWall != null) rightWall.position = new Vector3(halfWidth, 0f, 0f);
     }
 
     private void ResetState()
     {
         state = ShrinkState.Waiting;
         timer = 0f;
-        halfWidthPlayArea.Set(initialHalfWidth);
         UpdateWalls(initialHalfWidth);
     }
 }
 ```
+
+> **Note:** `ResetState` does not reset `halfWidthPlayArea` — `GameManager.OnGameStart` already resets it to the full camera width before `DifficultyManager.ResetState` runs (both subscribe to the same `gameStartEvent`). `DifficultyManager` just resets its timer and state.
 
 **Tuning reference (interval = 10s, duration = 1s, step = 0.6, initial halfWidth ≈ 9 units, min = 40%):**
 | Event # | Time elapsed | halfWidth |
@@ -146,9 +162,7 @@ The floor check happens in `Waiting` — once `halfWidthPlayArea.Value <= minHal
 
 ## Modified Script — `Orb.cs`
 
-**What changes:** `halfWidth` is no longer cached in `Awake`. A `FloatValue halfWidthPlayArea` reference replaces it. `FixedUpdate` reads `.Value` each physics step — when the boundary shrinks past an orb's current position the bounce condition fires and reflects it inward naturally.
-
-`halfHeight` stays cached — vertical bounds don't shrink.
+**What changes:** Both `halfWidth` and `halfHeight` are no longer cached — both are read live from FloatValue assets each `FixedUpdate`. Added `[Header("Play Area")]` with both `halfHeightPlayArea` and `halfWidthPlayArea` references. `Awake` no longer touches the camera at all.
 
 ```csharp
 using UnityEngine;
@@ -156,19 +170,20 @@ using UnityEngine;
 public class Orb : MonoBehaviour
 {
     [SerializeField] private OrbSet orbSet;
+
+    [Header("Play Area")]
+    [SerializeField] private FloatValue halfHeightPlayArea;
     [SerializeField] private FloatValue halfWidthPlayArea;
 
     public bool IsWhite { get; private set; }
 
     private Rigidbody2D rb;
     private float orbRadius;
-    private float halfHeight;
 
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
         orbRadius = GetComponent<CircleCollider2D>().bounds.extents.x;
-        halfHeight = Camera.main.orthographicSize;
     }
 
     void OnEnable() => orbSet.Add(this);
@@ -176,6 +191,7 @@ public class Orb : MonoBehaviour
 
     void FixedUpdate()
     {
+        float halfHeight = halfHeightPlayArea.Value;
         float halfWidth = halfWidthPlayArea.Value;
 
         Vector2 pos = rb.position;
@@ -228,22 +244,23 @@ public class Orb : MonoBehaviour
 
 ## Modified Script — `PlayerController.cs`
 
-**What changes:** `leftBound` and `rightBound` are no longer cached. `playerRadius` is stored in `Start` (was already computed there as a local — now kept as a field). `MoveHorizontal` computes bounds live from `halfWidthPlayArea.Value` each physics step.
+**What changes:** `leftBound` and `rightBound` removed; `playerRadius` stored as a field; `MoveHorizontal` reads `halfWidthPlayArea.Value` live. `colorRatio` and `collectDelta` are no longer serialized fields — they use `Constants.DEFAULT_COLOR_RATIO` and `Constants.COLLECT_DELTA`. `OnGameStart` resets `colorRatio` directly without a helper method (`UpdateColorRatio` and `GetColorRatio` removed).
 
 ```csharp
 using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
+    [Header("Stats")]
     [SerializeField] private IntegerValue health;
     [SerializeField] private IntegerValue score;
-    [SerializeField] private FloatValue halfWidthPlayArea;
 
+    [Header("Movement")]
     [SerializeField] private float moveSpeed = 5f;
     [SerializeField] private float rotateSpeed = 180f;
-    [SerializeField] private float colorRatio = 0.5f;
-    [SerializeField] private float collectDelta = 0.1f;
+    [SerializeField] private FloatValue halfWidthPlayArea;
 
+    [Header("Events")]
     [SerializeField] private GameEvent gameOverEvent;
     [SerializeField] private GameEvent gameStartEvent;
 
@@ -251,6 +268,7 @@ public class PlayerController : MonoBehaviour
     private Material splitMaterial;
     private float playerRadius;
 
+    private float colorRatio = Constants.DEFAULT_COLOR_RATIO;
     private bool isActive = true;
 
     void Start()
@@ -292,7 +310,7 @@ public class PlayerController : MonoBehaviour
 
         if (orb.IsWhite == hitWhiteHalf)
         {
-            colorRatio += orb.IsWhite ? collectDelta : -collectDelta;
+            colorRatio += orb.IsWhite ? Constants.COLLECT_DELTA : -Constants.COLLECT_DELTA;
             colorRatio = Mathf.Clamp01(colorRatio);
             splitMaterial.SetFloat("_ColorRatio", colorRatio);
             score.Set(score.Value + 1);
@@ -343,16 +361,9 @@ public class PlayerController : MonoBehaviour
     {
         isActive = true;
         transform.position = Vector2.zero;
-        UpdateColorRatio(0.5f);
-    }
-
-    public void UpdateColorRatio(float newRatio)
-    {
-        colorRatio = Mathf.Clamp01(newRatio);
+        colorRatio = Mathf.Clamp01(Constants.DEFAULT_COLOR_RATIO);
         splitMaterial.SetFloat("_ColorRatio", colorRatio);
     }
-
-    public float GetColorRatio() => colorRatio;
 }
 ```
 
@@ -402,9 +413,10 @@ No colliders on either wall — orb bounce and player clamp are handled in code 
 |-------|-------|
 | Half Width Play Area | `HalfWidthPlayArea` asset |
 
-### Orb Prefab Inspector (new field)
+### Orb Prefab Inspector (new fields)
 | Field | Value |
 |-------|-------|
+| Half Height Play Area | `HalfHeightPlayArea` asset |
 | Half Width Play Area | `HalfWidthPlayArea` asset |
 
 ---
