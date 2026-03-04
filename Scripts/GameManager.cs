@@ -2,11 +2,24 @@ using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
+    [Header("Play Area")]
+    [SerializeField] private FloatValue halfHeightPlayArea;
+    [SerializeField] private FloatValue halfWidthPlayArea;
+
+    [Header("Player")]
     [SerializeField] private IntegerValue health;
     [SerializeField] private IntegerValue score;
 
     [SerializeField] private GameEvent gameOverEvent;
     [SerializeField] private GameEvent gameStartEvent;
+
+    void Awake()
+    {
+        float halfHeight = Camera.main.orthographicSize;
+        float halfWidth = halfHeight * Camera.main.aspect;
+        halfHeightPlayArea.Set(halfHeight);
+        halfWidthPlayArea.Set(halfWidth);
+    }
 
     void Start()
     {

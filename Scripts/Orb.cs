@@ -2,11 +2,7 @@ using UnityEngine;
 
 public class Orb : MonoBehaviour
 {
-    [SerializeField] private float speed = 3f;
-    [SerializeField] private float minLifetime = 4f;
-    [SerializeField] private float maxLifetime = 9f;
-
-    [SerializeField] private GameEvent gameStartEvent;
+    [SerializeField] private OrbSet orbSet;
 
     public bool IsWhite { get; private set; }
 
@@ -23,15 +19,9 @@ public class Orb : MonoBehaviour
         halfWidth = halfHeight * Camera.main.aspect;
     }
 
-    void OnEnable()
-    {
-        gameStartEvent.OnRaised += OnGameStart;
-    }
+    void OnEnable() => orbSet.Add(this);
 
-    void OnDisable()
-    {
-        gameStartEvent.OnRaised -= OnGameStart;
-    }
+    void OnDisable() => orbSet.Remove(this);
 
     void FixedUpdate()
     {
@@ -39,7 +29,6 @@ public class Orb : MonoBehaviour
         Vector2 vel = rb.linearVelocity;
         bool bounced = false;
 
-        // Left / right walls
         if (pos.x - orbRadius < -halfWidth)
         {
             vel.x = Mathf.Abs(vel.x);
@@ -53,7 +42,6 @@ public class Orb : MonoBehaviour
             bounced = true;
         }
 
-        // Top / bottom walls
         if (pos.y - orbRadius < -halfHeight)
         {
             vel.y = Mathf.Abs(vel.y);
@@ -74,23 +62,10 @@ public class Orb : MonoBehaviour
         }
     }
 
-    // --- Private ---
-
-    private void OnGameStart()
-    {
-        Destroy(gameObject);
-    }
-
-    // --- Public API ---
-
-    // Called by OrbSpawner immediately after Instantiate
-    public void Initialize(bool isWhite, Vector2 direction)
+    public void Initialize(bool isWhite, Vector2 direction, float speed)
     {
         IsWhite = isWhite;
         GetComponent<SpriteRenderer>().color = isWhite ? Color.white : Color.black;
         rb.linearVelocity = direction.normalized * speed;
-
-        Destroy(gameObject, Random.Range(minLifetime, maxLifetime));
     }
-
 }
