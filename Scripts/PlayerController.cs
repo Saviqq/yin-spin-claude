@@ -2,35 +2,32 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
+    [Header("Stats")]
     [SerializeField] private IntegerValue health;
     [SerializeField] private IntegerValue score;
 
+    [Header("Movement")]
     [SerializeField] private float moveSpeed = 5f;
     [SerializeField] private float rotateSpeed = 180f;
-    [SerializeField] private float colorRatio = 0.5f;
-    [SerializeField] private float collectDelta = 0.1f;
+    [SerializeField] private FloatValue halfWidthPlayArea;
 
+    [Header("Events")]
     [SerializeField] private GameEvent gameOverEvent;
     [SerializeField] private GameEvent gameStartEvent;
 
     private Rigidbody2D rb;
     private Material splitMaterial;
-    private float leftBound;
-    private float rightBound;
+    private float playerRadius;
 
+    private float colorRatio = Constants.DEFAULT_COLOR_RATIO;
     private bool isActive = true;
 
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
-
         splitMaterial = GetComponent<MeshRenderer>().material;
         splitMaterial.SetFloat("_ColorRatio", colorRatio);
-
-        float playerRadius = GetComponent<CircleCollider2D>().bounds.extents.x;
-        float camHalfWidth = Camera.main.orthographicSize * Camera.main.aspect;
-        leftBound = -camHalfWidth + playerRadius;
-        rightBound = camHalfWidth - playerRadius;
+        playerRadius = GetComponent<CircleCollider2D>().bounds.extents.x;
     }
 
     void OnEnable()
@@ -65,7 +62,7 @@ public class PlayerController : MonoBehaviour
         if (orb.IsWhite == hitWhiteHalf)
         {
             // Correct color — collect
-            colorRatio += orb.IsWhite ? collectDelta : -collectDelta;
+            colorRatio += orb.IsWhite ? Constants.COLLECT_DELTA : -Constants.COLLECT_DELTA;
             colorRatio = Mathf.Clamp01(colorRatio);
             splitMaterial.SetFloat("_ColorRatio", colorRatio);
             score.Set(score.Value + 1);
@@ -80,8 +77,6 @@ public class PlayerController : MonoBehaviour
 
         Destroy(other.gameObject);
     }
-
-    // --- Private ---
 
     private void HandleRotation()
     {
@@ -98,8 +93,9 @@ public class PlayerController : MonoBehaviour
         if (Input.GetKey(KeyCode.A)) input = -1f;
         else if (Input.GetKey(KeyCode.D)) input = 1f;
 
+        float bound = halfWidthPlayArea.Value - playerRadius;
         Vector2 newPos = rb.position + Vector2.right * (input * moveSpeed * Time.fixedDeltaTime);
-        newPos.x = Mathf.Clamp(newPos.x, leftBound, rightBound);
+        newPos.x = Mathf.Clamp(newPos.x, -bound, bound);
         rb.MovePosition(newPos);
     }
 
@@ -131,16 +127,7 @@ public class PlayerController : MonoBehaviour
     {
         isActive = true;
         transform.position = Vector2.zero;
-        UpdateColorRatio(0.5f);
-    }
-
-    // --- Public API ---
-
-    public void UpdateColorRatio(float newRatio)
-    {
-        colorRatio = Mathf.Clamp01(newRatio);
+        colorRatio = Mathf.Clamp01(Constants.DEFAULT_COLOR_RATIO);
         splitMaterial.SetFloat("_ColorRatio", colorRatio);
     }
-
-    public float GetColorRatio() => colorRatio;
 }

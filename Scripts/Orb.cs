@@ -4,19 +4,20 @@ public class Orb : MonoBehaviour
 {
     [SerializeField] private OrbSet orbSet;
 
+    [Header("Play Area")]
+    [SerializeField] private FloatValue halfHeightPlayArea;
+    [SerializeField] private FloatValue halfWidthPlayArea;
+
     public bool IsWhite { get; private set; }
 
     private Rigidbody2D rb;
     private float orbRadius;
-    private float halfWidth;
-    private float halfHeight;
+
 
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
         orbRadius = GetComponent<CircleCollider2D>().bounds.extents.x;
-        halfHeight = Camera.main.orthographicSize;
-        halfWidth = halfHeight * Camera.main.aspect;
     }
 
     void OnEnable() => orbSet.Add(this);
@@ -25,6 +26,9 @@ public class Orb : MonoBehaviour
 
     void FixedUpdate()
     {
+        float halfHeight = halfHeightPlayArea.Value;
+        float halfWidth = halfWidthPlayArea.Value;
+
         Vector2 pos = rb.position;
         Vector2 vel = rb.linearVelocity;
         bool bounced = false;

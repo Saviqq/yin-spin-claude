@@ -15,15 +15,7 @@ public class GameManager : MonoBehaviour
 
     void Awake()
     {
-        float halfHeight = Camera.main.orthographicSize;
-        float halfWidth = halfHeight * Camera.main.aspect;
-        halfHeightPlayArea.Set(halfHeight);
-        halfWidthPlayArea.Set(halfWidth);
-    }
-
-    void Start()
-    {
-        Cursor.visible = false;
+        OnGameStart();
     }
 
     void OnEnable()
@@ -53,6 +45,8 @@ public class GameManager : MonoBehaviour
     {
         health.Reset();
         score.Reset();
+        halfHeightPlayArea.Set(Camera.main.orthographicSize);
+        halfWidthPlayArea.Set(Camera.main.orthographicSize * Camera.main.aspect);
         Cursor.visible = false;
     }
 
