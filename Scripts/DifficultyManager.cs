@@ -6,18 +6,25 @@ public class DifficultyManager : MonoBehaviour
     [SerializeField] private FloatValue halfWidthPlayArea;
     [SerializeField] private Transform leftWall;
     [SerializeField] private Transform rightWall;
-    [SerializeField] private float shrinkStep = 0.6f;           // world units removed per event
-    [SerializeField] private float minHalfWidthFraction = 0.4f; // floor = 40% of initial
+    [SerializeField] private float shrinkStep = 0.6f;
+    [SerializeField] private float minHalfWidthFraction = 0.4f;
 
     [Header("Timing")]
-    [SerializeField] private FloatValue shrinkInterval;  // wait between shrinks
-    [SerializeField] private FloatValue shrinkDuration;  // length of each transition
+    [SerializeField] private FloatValue shrinkInterval;
+    [SerializeField] private FloatValue shrinkDuration;
+
+    [Header("Score Scaling")]
+    [SerializeField] private IntegerValue score;
+    [SerializeField] private FloatValue spawnInterval;
+    [SerializeField] private FloatValue orbSpeed;
 
     [Header("Events")]
     [SerializeField] private GameEvent gameStartEvent;
 
     private float initialHalfWidth;
     private float minHalfWidth;
+    private float baseSpawnInterval;
+    private float baseOrbSpeed;
 
     private enum ShrinkState { Waiting, Shrinking }
     private ShrinkState state;
@@ -30,11 +37,22 @@ public class DifficultyManager : MonoBehaviour
     {
         initialHalfWidth = halfWidthPlayArea.Value;
         minHalfWidth = initialHalfWidth * minHalfWidthFraction;
+        baseSpawnInterval = spawnInterval.Value;
+        baseOrbSpeed = orbSpeed.Value;
         ResetState();
     }
 
-    void OnEnable() => gameStartEvent.OnRaised += ResetState;
-    void OnDisable() => gameStartEvent.OnRaised -= ResetState;
+    void OnEnable()
+    {
+        gameStartEvent.OnRaised += ResetState;
+        score.OnChange += OnScoreChanged;
+    }
+
+    void OnDisable()
+    {
+        gameStartEvent.OnRaised -= ResetState;
+        score.OnChange -= OnScoreChanged;
+    }
 
     void Update()
     {
@@ -62,6 +80,15 @@ public class DifficultyManager : MonoBehaviour
         }
     }
 
+    private void OnScoreChanged(int newScore)
+    {
+        if (newScore == 0 || newScore % Constants.SCORE_TRESHOLD != 0) return;
+
+        float multiplier = newScore / Constants.SCORE_TRESHOLD;
+        spawnInterval.Set(Mathf.Max(Constants.MIN_SPAWN_INTERVAL, baseSpawnInterval - (multiplier * Constants.SPAWN_SCALE_FACTOR)));
+        orbSpeed.Set(Mathf.Min(Constants.MAX_ORB_SPEED, baseOrbSpeed + (multiplier * Constants.SPEED_SCALE_FACTOR)));
+    }
+
     private void BeginShrink()
     {
         shrinkFrom = halfWidthPlayArea.Value;
@@ -81,5 +108,8 @@ public class DifficultyManager : MonoBehaviour
         state = ShrinkState.Waiting;
         timer = 0f;
         UpdateWalls(initialHalfWidth);
+        spawnInterval.Set(baseSpawnInterval);
+        orbSpeed.Set(baseOrbSpeed);
+
     }
 }

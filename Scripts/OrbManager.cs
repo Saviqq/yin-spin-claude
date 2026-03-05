@@ -6,8 +6,8 @@ public class OrbManager : MonoBehaviour
     [SerializeField] private Orb orbPrefab;
     [SerializeField] private FloatValue halfHeightPlayArea;
     [SerializeField] private FloatValue halfWidthPlayArea;
-    [SerializeField] private float spawnInterval = 2f;   // replaced by DifficultyManager later
-    [SerializeField] private float orbSpeed = 3f;        // replaced by DifficultyManager later
+    [SerializeField] private FloatValue spawnInterval;
+    [SerializeField] private FloatValue orbSpeed;
 
     [Header("Orbs")]
     [SerializeField] private OrbSet orbSet;
@@ -24,6 +24,7 @@ public class OrbManager : MonoBehaviour
     {
         orbSpawner = new OrbSpawner(orbPrefab, halfHeightPlayArea, halfWidthPlayArea);
         isSpawning = true;
+        timer = spawnInterval.Value;
     }
 
     void OnEnable()
@@ -43,10 +44,10 @@ public class OrbManager : MonoBehaviour
         if (!isSpawning) return;
 
         timer += Time.deltaTime;
-        if (timer >= spawnInterval)
+        if (timer >= spawnInterval.Value)
         {
             timer = 0f;
-            orbSpawner.Spawn(orbSpeed);
+            orbSpawner.Spawn(orbSpeed.Value);
         }
     }
 
@@ -55,10 +56,9 @@ public class OrbManager : MonoBehaviour
     private void OnGameStart()
     {
         for (int i = orbSet.Items.Count - 1; i >= 0; i--)
-        {
             Destroy(orbSet.Items[i].gameObject);
-        }
+
         isSpawning = true;
-        timer = 0f;
+        timer = spawnInterval.Value;
     }
 }
