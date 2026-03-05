@@ -4,13 +4,14 @@
 
 This step implements **Axis 2**: as score increases, spawn interval shortens and orb speed increases. Values update only when the score changes — not every frame.
 
-### What changes
+### What changed
 | File | Change |
 |------|--------|
-| `DifficultyManager.cs` | Subscribe to `score.OnChange`; update axis values in handler |
-| `OrbManager.cs` | `spawnInterval` and `orbSpeed` fields: `float` → `FloatValue` |
+| `DifficultyManager.cs` | Subscribe to `score.OnChange`; update axis values in handler; `ResetState` explicitly resets both values |
+| `OrbManager.cs` | `spawnInterval` and `orbSpeed`: `float` → `FloatValue`; timer initialised to `spawnInterval.Value` on start/restart |
+| `Constants.cs` | Added difficulty constants |
 
-### What stays the same
+### What stayed the same
 - Everything else — `Orb`, `PlayerController`, `GameManager`, `OrbSpawner`, walls
 
 ---
@@ -19,8 +20,6 @@ This step implements **Axis 2**: as score increases, spawn interval shortens and
 
 `IntegerValue` already has `event Action<int> OnChange` which fires with the new value every time `score.Set(...)` is called — the same pattern `GameManager` uses to watch `health`. `DifficultyManager` subscribes to `score.OnChange` directly in `OnEnable`/`OnDisable`. No new ScriptableObject required.
 
-**Bonus:** when `GameManager.OnGameStart` calls `score.Reset()`, that fires `score.OnChange(0)`, which triggers `OnScoreChanged(0)` in `DifficultyManager` — which sets `spawnInterval` and `orbSpeed` back to their base values automatically. `ResetState` doesn't need to touch them at all.
-
 ---
 
 ## New FloatValue Assets
@@ -28,53 +27,33 @@ This step implements **Axis 2**: as score increases, spawn interval shortens and
 | Asset | Default Value | Meaning |
 |-------|--------------|---------|
 | `SpawnInterval` | `5` | Runtime spawn interval (seconds); written by DifficultyManager |
-| `MinSpawnInterval` | `1.5` | Spawn interval floor |
 | `OrbSpeed` | `3` | Runtime orb speed (world units/sec); written by DifficultyManager |
-| `MaxOrbSpeed` | `7` | Orb speed ceiling |
 
-`SpawnInterval` and `OrbSpeed` are live runtime values. `MinSpawnInterval` and `MaxOrbSpeed` are read-only caps.
-
----
-
-## Score Threshold vs Continuous Scaling
-
-Two approaches are possible. Both use `score.OnChange` — the only difference is whether the handler acts on every score point or only at multiples of a threshold.
-
-### Continuous (every point)
-```csharp
-private void OnScoreChanged(int newScore)
-{
-    spawnInterval.Set(Mathf.Max(minSpawnInterval.Value, baseSpawnInterval - newScore * spawnScaleFactor));
-    orbSpeed.Set(Mathf.Min(maxOrbSpeed.Value, baseOrbSpeed + newScore * speedScaleFactor));
-}
-```
-Difficulty curve is perfectly smooth. Changes are imperceptible on any individual score point. Player cannot feel individual jumps.
-
-### Threshold (every N points)
-```csharp
-private void OnScoreChanged(int newScore)
-{
-    if (newScore % scoreThreshold != 0) return;
-
-    spawnInterval.Set(Mathf.Max(minSpawnInterval.Value, baseSpawnInterval - newScore * spawnScaleFactor));
-    orbSpeed.Set(Mathf.Min(maxOrbSpeed.Value, baseOrbSpeed + newScore * speedScaleFactor));
-}
-```
-Difficulty holds steady for a stretch, then visibly steps up. Phase boundaries are legible to the player. Pairs naturally with visual/audio feedback at each step. More arcade-like.
-
-**`scoreThreshold = 10` produces the same numbers at each multiple of 10 as the continuous version.** The end-game difficulty is identical; only the pacing differs.
-
-Score `0` is always divisible by any threshold, so the reset case (`OnScoreChanged(0)`) works correctly in both approaches.
-
-**Recommendation: threshold.** For a game jam arcade game, legible phase boundaries feel better than imperceptible micro-changes.
+`SpawnInterval` and `OrbSpeed` are live runtime values. Caps and scale factors live in `Constants.cs` — no separate cap assets.
 
 ---
 
-## Updated Script — `DifficultyManager.cs`
+## Constants Added
 
-Score axis handled entirely in `OnScoreChanged`. `Update` only runs the time axis. `ResetState` only resets the shrink state machine — the score reset from `GameManager` propagates automatically via `score.OnChange(0)`.
+```csharp
+// Orbs / Difficulty
+public static float MIN_SPAWN_INTERVAL = 1.5f;
+public static float SPAWN_SCALE_FACTOR = 0.5f;
+public static float MAX_ORB_SPEED      = 5.5f;
+public static float SPEED_SCALE_FACTOR = 0.5f;
+// Score
+public static int   SCORE_TRESHOLD     = 5;     // note: matches source spelling
+```
 
-The script below uses the threshold approach. To switch to continuous, remove the `if (newScore % scoreThreshold != 0) return;` line.
+Threshold every **5 points**. Scale factors **0.5** (steep — each step is meaningful). Max orb speed **5.5**. All tunable by editing `Constants.cs`.
+
+---
+
+## `DifficultyManager.cs`
+
+Score axis handled entirely in `OnScoreChanged`. `Update` only runs the time axis. `OnScoreChanged` uses a `multiplier = newScore / SCORE_TRESHOLD` rather than raw score — so the formula steps in discrete increments rather than accumulating fractions. Guards with `newScore == 0` to skip the reset-propagation from `score.Reset()` (reset is handled explicitly in `ResetState`).
+
+`ResetState` explicitly calls `.Set(base*)` to restore values — does not rely on the score-change side effect.
 
 ```csharp
 using UnityEngine;
@@ -95,12 +74,7 @@ public class DifficultyManager : MonoBehaviour
     [Header("Score Scaling")]
     [SerializeField] private IntegerValue score;
     [SerializeField] private FloatValue spawnInterval;
-    [SerializeField] private FloatValue minSpawnInterval;
-    [SerializeField] private float spawnScaleFactor = 0.05f;
     [SerializeField] private FloatValue orbSpeed;
-    [SerializeField] private FloatValue maxOrbSpeed;
-    [SerializeField] private float speedScaleFactor = 0.08f;
-    [SerializeField] private int scoreThreshold = 10;
 
     [Header("Events")]
     [SerializeField] private GameEvent gameStartEvent;
@@ -166,10 +140,11 @@ public class DifficultyManager : MonoBehaviour
 
     private void OnScoreChanged(int newScore)
     {
-        if (newScore % scoreThreshold != 0) return;
+        if (newScore == 0 || newScore % Constants.SCORE_TRESHOLD != 0) return;
 
-        spawnInterval.Set(Mathf.Max(minSpawnInterval.Value, baseSpawnInterval - newScore * spawnScaleFactor));
-        orbSpeed.Set(Mathf.Min(maxOrbSpeed.Value, baseOrbSpeed + newScore * speedScaleFactor));
+        float multiplier = newScore / Constants.SCORE_TRESHOLD;
+        spawnInterval.Set(Mathf.Max(Constants.MIN_SPAWN_INTERVAL, baseSpawnInterval - (multiplier * Constants.SPAWN_SCALE_FACTOR)));
+        orbSpeed.Set(Mathf.Min(Constants.MAX_ORB_SPEED, baseOrbSpeed + (multiplier * Constants.SPEED_SCALE_FACTOR)));
     }
 
     private void BeginShrink()
@@ -191,25 +166,28 @@ public class DifficultyManager : MonoBehaviour
         state = ShrinkState.Waiting;
         timer = 0f;
         UpdateWalls(initialHalfWidth);
+        spawnInterval.Set(baseSpawnInterval);
+        orbSpeed.Set(baseOrbSpeed);
     }
 }
 ```
 
-**Scale reference (baseInterval = 5, min = 1.5, baseSpeed = 3, max = 7, threshold = 10):**
-| Score | Spawn interval | Orb speed |
-|-------|---------------|-----------|
-| 0 | 5.0s | 3.0 |
-| 10 | 4.5s | 3.8 |
-| 20 | 4.0s | 4.6 |
-| 30 | 3.5s | 5.4 |
-| 50 | 2.5s | 7.0 (capped) |
-| 70 | 1.5s (capped) | 7.0 |
+**Scale reference (baseInterval = 5, min = 1.5, baseSpeed = 3, max = 5.5, threshold = 5, factor = 0.5):**
+| Score | Multiplier | Spawn interval | Orb speed |
+|-------|-----------|---------------|-----------|
+| 0 | 0 | 5.0s | 3.0 |
+| 5 | 1 | 4.5s | 3.5 |
+| 10 | 2 | 4.0s | 4.0 |
+| 15 | 3 | 3.5s | 4.5 |
+| 20 | 4 | 3.0s | 5.0 |
+| 25 | 5 | 2.5s | 5.5 (capped) |
+| ~35 | 7 | 1.5s (capped) | 5.5 |
 
 ---
 
-## Updated Script — `OrbManager.cs`
+## `OrbManager.cs`
 
-Two field type changes only: `float spawnInterval` → `FloatValue`, `float orbSpeed` → `FloatValue`. Both read sites in `Update` get `.Value`.
+Two field type changes: `float` → `FloatValue` for `spawnInterval` and `orbSpeed`. One behaviour change: `timer` is initialised to `spawnInterval.Value` in both `Start` and `OnGameStart` — first orb spawns immediately on game start instead of waiting the full interval.
 
 ```csharp
 using UnityEngine;
@@ -238,6 +216,7 @@ public class OrbManager : MonoBehaviour
     {
         orbSpawner = new OrbSpawner(orbPrefab, halfHeightPlayArea, halfWidthPlayArea);
         isSpawning = true;
+        timer = spawnInterval.Value;
     }
 
     void OnEnable()
@@ -272,7 +251,7 @@ public class OrbManager : MonoBehaviour
             Destroy(orbSet.Items[i].gameObject);
 
         isSpawning = true;
-        timer = 0f;
+        timer = spawnInterval.Value;
     }
 }
 ```
@@ -286,14 +265,9 @@ public class OrbManager : MonoBehaviour
 |-------|-------|
 | Score | `Score` asset |
 | Spawn Interval | `SpawnInterval` asset |
-| Min Spawn Interval | `MinSpawnInterval` asset |
-| Spawn Scale Factor | `0.05` |
 | Orb Speed | `OrbSpeed` asset |
-| Max Orb Speed | `MaxOrbSpeed` asset |
-| Speed Scale Factor | `0.08` |
-| Score Threshold | `10` |
 
-### OrbManager — replace float fields with FloatValue assets
+### OrbManager — replaced float fields
 | Field | Was | Now |
 |-------|-----|-----|
 | Spawn Interval | `2` (float) | `SpawnInterval` asset |
@@ -305,7 +279,6 @@ public class OrbManager : MonoBehaviour
 
 1. `gameStartEvent.Raise()`
 2. `GameManager.OnGameStart` → `score.Reset()` → fires `score.OnChange(0)`
-3. `DifficultyManager.OnScoreChanged(0)` → `0 % 10 == 0` → resets `spawnInterval` and `orbSpeed` to base values
-4. `DifficultyManager.ResetState` → resets shrink timer and state
-
-`spawnInterval` and `orbSpeed` are reset as a side effect of the score reset — no explicit reset needed in `ResetState`.
+3. `DifficultyManager.OnScoreChanged(0)` → `newScore == 0` guard fires → **skipped**
+4. `DifficultyManager.ResetState` → sets `spawnInterval` and `orbSpeed` back to base values explicitly; resets shrink state
+5. `OrbManager.OnGameStart` → sets `timer = spawnInterval.Value` (now reset to 5s) → first orb spawns immediately
