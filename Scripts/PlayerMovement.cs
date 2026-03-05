@@ -7,6 +7,7 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float moveSpeed = 5f;
     [SerializeField] private float rotateSpeed = 180f;
     [SerializeField] private FloatValue halfWidthPlayArea;
+    [SerializeField] private FloatValue halfHeightPlayArea;
 
     private Rigidbody2D rb;
     private float playerRadius;
@@ -28,14 +29,25 @@ public class PlayerMovement : MonoBehaviour
 
     private void HandleMovement()
     {
-        float input = 0f;
-        if (Input.GetKey(KeyCode.A)) input = -1f;
-        else if (Input.GetKey(KeyCode.D)) input = 1f;
+        float x = 0f;
+        float y = 0f;
 
-        float bound = halfWidthPlayArea.Value - playerRadius;
-        Vector2 newPos = rb.position + Vector2.right * (input * moveSpeed * Time.fixedDeltaTime);
-        newPos.x = Mathf.Clamp(newPos.x, -bound, bound);
+        if (Input.GetKey(KeyCode.A)) x = -1f;
+        else if (Input.GetKey(KeyCode.D)) x = 1f;
+
+        if (Input.GetKey(KeyCode.W)) y = 1f;
+        else if (Input.GetKey(KeyCode.S)) y = -1f;
+
+        Vector2 moveInput = new Vector2(x, y);
+
+        Vector2 newPos = rb.position + moveInput.normalized * moveSpeed * Time.fixedDeltaTime;
+        float xBound = halfWidthPlayArea.Value - playerRadius;
+        float yBound = halfHeightPlayArea.Value - playerRadius;
+        newPos.x = Mathf.Clamp(newPos.x, -xBound, xBound);
+        newPos.y = Mathf.Clamp(newPos.y, -yBound, yBound);
+
         rb.MovePosition(newPos);
+
     }
 
     public void Handle()
