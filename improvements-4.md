@@ -60,10 +60,9 @@ public class PlayerMovement : MonoBehaviour
         if (Input.GetKey(KeyCode.W)) y = 1f;
         else if (Input.GetKey(KeyCode.S)) y = -1f;
 
-        Vector2 input = new Vector2(x, y);
-        if (input == Vector2.zero) return;
+        Vector2 moveInput = new Vector2(x, y);
 
-        Vector2 newPos = rb.position + input.normalized * moveSpeed * Time.fixedDeltaTime;
+        Vector2 newPos = rb.position + moveInput.normalized * moveSpeed * Time.fixedDeltaTime;
 
         float xBound = halfWidthPlayArea.Value - playerRadius;
         float yBound = halfHeightPlayArea.Value - playerRadius;
