@@ -2,7 +2,9 @@
 
 ## Scope
 
-One new UXML section, one USS block, one camera viewport change. No new C# scripts.
+One new UXML section, one USS block, one camera viewport change. No new C# scripts (sprites wired via USS `background-image` rules).
+
+UI scripts moved to `Scripts/UI/` subfolder — `HealthUI.cs`, `ScoreUI.cs`, `GameOverUI.cs` all live there now.
 
 | Asset | Change |
 |-------|--------|
