@@ -14,6 +14,7 @@
 | `HUD.uss` | No changes — reuses existing overlay/panel/menu-btn classes |
 | `GamePausedEvent.asset` | New `GameEvent` instance |
 | `GameResumedEvent.asset` | New `GameEvent` instance |
+| `ResumeButtonClickedEvent.asset` | New `GameEvent` instance — decouples button click from resume logic |
 
 ---
 
@@ -52,9 +53,10 @@ public class GameManager : MonoBehaviour
     [SerializeField] private GameEvent gameStartEvent;
     [SerializeField] private GameEvent gamePausedEvent;
     [SerializeField] private GameEvent gameResumedEvent;
+    [SerializeField] private GameEvent resumeButtonClickedEvent;
 
-    private bool isPaused;
-    private bool isGameOver;
+    private bool isPaused = false;
+    private bool isGameOver = false;
 
     void Awake()
     {
@@ -66,6 +68,7 @@ public class GameManager : MonoBehaviour
         health.OnChange += OnHealthChanged;
         gameStartEvent.OnRaised += OnGameStart;
         gameOverEvent.OnRaised += OnGameOver;
+        resumeButtonClickedEvent.OnRaised += Resume;
     }
 
     void OnDisable()
@@ -73,6 +76,7 @@ public class GameManager : MonoBehaviour
         health.OnChange -= OnHealthChanged;
         gameStartEvent.OnRaised -= OnGameStart;
         gameOverEvent.OnRaised -= OnGameOver;
+        resumeButtonClickedEvent.OnRaised -= Resume;
     }
 
     void Update()
@@ -328,7 +332,7 @@ public class PauseMenuUI : MonoBehaviour
     private void OnPause()  => overlay.style.display = DisplayStyle.Flex;
     private void OnResume() => overlay.style.display = DisplayStyle.None;
 
-    private void OnResumeClicked()  => gameResumedEvent.Raise();
+    private void OnResumeClicked()  => resumeButtonClickedEvent.Raise();
     private void OnRestartClicked() => gameStartEvent.Raise();
 
     private void OnExitClicked()
@@ -348,9 +352,9 @@ public class PauseMenuUI : MonoBehaviour
 Add inside the root alongside `game-over-overlay`:
 
 ```xml
-<ui:VisualElement name="pause-overlay" class="overlay">
-    <ui:VisualElement class="panel">
-        <ui:Label class="panel-title" text="PAUSED" />
+<ui:VisualElement name="pause-overlay" class="menu-overlay">
+    <ui:VisualElement class="menu-panel">
+        <ui:Label class="menu-title" text="PAUSED" />
         <ui:Button name="pause-resume-btn"  class="menu-btn" text="RESUME"  />
         <ui:Button name="pause-restart-btn" class="menu-btn" text="RESTART" />
         <ui:Button name="pause-exit-btn"    class="menu-btn" text="QUIT"    />
@@ -358,7 +362,7 @@ Add inside the root alongside `game-over-overlay`:
 </ui:VisualElement>
 ```
 
-Reuses `overlay`, `panel`, `panel-title`, `menu-btn` — no USS changes needed.
+Reuses `menu-overlay`, `menu-panel`, `menu-title`, `menu-btn` — shared with `game-over-overlay`. No USS changes needed.
 
 ---
 
@@ -368,12 +372,14 @@ Reuses `overlay`, `panel`, `panel-title`, `menu-btn` — no USS changes needed.
 Create in `Assets/ScriptableObjects/`:
 - `GamePausedEvent.asset` (GameEvent)
 - `GameResumedEvent.asset` (GameEvent)
+- `ResumeButtonClickedEvent.asset` (GameEvent)
 
 ### GameManager
 | Field | Value |
 |-------|-------|
 | Game Paused Event | `GamePausedEvent` |
 | Game Resumed Event | `GameResumedEvent` |
+| Resume Button Clicked Event | `ResumeButtonClickedEvent` |
 
 Remove the `gameOverEvent` slot from Player and the `gameOverEvent` slot from OrbManager in the Inspector.
 
@@ -383,6 +389,7 @@ Remove the `gameOverEvent` slot from Player and the `gameOverEvent` slot from Or
 | Game Paused Event | `GamePausedEvent` |
 | Game Resumed Event | `GameResumedEvent` |
 | Game Start Event | `GameStartEvent` |
+| Resume Button Clicked Event | `ResumeButtonClickedEvent` |
 
 ---
 
