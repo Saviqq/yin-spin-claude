@@ -10,8 +10,15 @@ public class GameManager : MonoBehaviour
     [SerializeField] private IntegerValue health;
     [SerializeField] private IntegerValue score;
 
+    [Header("Events")]
     [SerializeField] private GameEvent gameOverEvent;
     [SerializeField] private GameEvent gameStartEvent;
+    [SerializeField] private GameEvent gamePausedEvent;
+    [SerializeField] private GameEvent gameResumedEvent;
+    [SerializeField] private GameEvent resumeButtonClickedEvent;
+
+    private bool isPaused = false;
+    private bool isGameOver = false;
 
     void Awake()
     {
@@ -23,7 +30,7 @@ public class GameManager : MonoBehaviour
         health.OnChange += OnHealthChanged;
         gameStartEvent.OnRaised += OnGameStart;
         gameOverEvent.OnRaised += OnGameOver;
-
+        resumeButtonClickedEvent.OnRaised += Resume;
     }
 
     void OnDisable()
@@ -31,28 +38,59 @@ public class GameManager : MonoBehaviour
         health.OnChange -= OnHealthChanged;
         gameStartEvent.OnRaised -= OnGameStart;
         gameOverEvent.OnRaised -= OnGameOver;
+        resumeButtonClickedEvent.OnRaised -= Resume;
+    }
+
+    void Update()
+    {
+        if (isGameOver) return;
+
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            if (isPaused) Resume();
+            else Pause();
+        }
+    }
+
+    private void Pause()
+    {
+        isPaused = true;
+        Time.timeScale = 0f;
+        Cursor.visible = true;
+        gamePausedEvent.Raise();
+    }
+
+    private void Resume()
+    {
+        isPaused = false;
+        Time.timeScale = 1f;
+        Cursor.visible = false;
+        gameResumedEvent.Raise();
     }
 
     private void OnHealthChanged(int current)
     {
         if (current <= 0)
-        {
             gameOverEvent.Raise();
-        }
     }
 
     private void OnGameStart()
     {
+        isGameOver = false;
+        isPaused = false;
+        Time.timeScale = 1f;
+        Cursor.visible = false;
+
         health.Reset();
         score.Reset();
         halfHeightPlayArea.Set(Camera.main.orthographicSize);
         halfWidthPlayArea.Set(Camera.main.orthographicSize * Camera.main.aspect);
-        Cursor.visible = false;
     }
 
     private void OnGameOver()
     {
+        isGameOver = true;
+        Time.timeScale = 0f;
         Cursor.visible = true;
     }
-
 }
