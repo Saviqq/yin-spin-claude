@@ -5,7 +5,7 @@
 | File | Change |
 |------|--------|
 | `ClearOrbsEffect.cs` | New SO — destroys all live orbs on pickup |
-| `BalanceColorEffect.cs` | New SO — nudges colorRatio toward 0.5 by one COLLECT_DELTA |
+| `BalanceColorEffect.cs` | New SO — raises `BalanceColorEvent`; Player handles the math |
 | `Player.cs` | Add `balanceColorEvent` field + `OnBalanceColor` handler |
 
 ---
