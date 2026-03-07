@@ -35,8 +35,7 @@ public class GainScoreEffect : PowerupEffect
 
 Two additions to the existing script:
 - `[SerializeField] Transform player` — reference to the Player GameObject transform
-- `[SerializeField] float minDistFromPlayer = 2f` — candidate must be at least this far from the player
-- `[SerializeField] float minDistFromPowerup = 1f` — candidate must be at least this far from every existing powerup
+- `[SerializeField] float minDistance = 1f` — single threshold used for both player distance and inter-powerup distance
 - `SpawnPowerup` delegates to `TryGetValidPosition` before instantiating; skips spawn silently if no valid position found after 20 attempts
 
 ```csharp
@@ -53,8 +52,7 @@ public class PowerupManager : MonoBehaviour
 
     [Header("Spawn Validation")]
     [SerializeField] private Transform player;
-    [SerializeField] private float minDistFromPlayer = 2f;
-    [SerializeField] private float minDistFromPowerup = 1f;
+    [SerializeField] private float minDistance = 1f;
 
     [Header("Tracking")]
     [SerializeField] private PowerupSet powerupSet;
@@ -89,21 +87,21 @@ public class PowerupManager : MonoBehaviour
 
     private bool TryGetValidPosition(out Vector2 pos)
     {
-        float hw = halfWidthPlayArea.Value * 0.8f;
-        float hh = halfHeightPlayArea.Value * 0.8f;
+        float hw = halfWidthPlayArea.Value * 0.9f;
+        float hh = halfHeightPlayArea.Value * 0.9f;
 
         const int maxAttempts = 20;
         for (int i = 0; i < maxAttempts; i++)
         {
             Vector2 candidate = new Vector2(Random.Range(-hw, hw), Random.Range(-hh, hh));
 
-            if (Vector2.Distance(candidate, player.position) < minDistFromPlayer)
+            if (Vector2.Distance(candidate, player.position) < minDistance)
                 continue;
 
             bool tooClose = false;
             foreach (Powerup existing in powerupSet.Items)
             {
-                if (Vector2.Distance(candidate, existing.transform.position) < minDistFromPowerup)
+                if (Vector2.Distance(candidate, existing.transform.position) < minDistance)
                 {
                     tooClose = true;
                     break;
@@ -153,8 +151,7 @@ public class PowerupManager : MonoBehaviour
 | Field | Value |
 |-------|-------|
 | Player | Player GameObject transform |
-| Min Dist From Player | `2` |
-| Min Dist From Powerup | `1` |
+| Min Distance | `1` |
 
 ### PowerupManager — Effects array
 Add `GainScoreEffect.asset` alongside `GainHeartEffect.asset`. Both are now randomly selected at spawn time.
