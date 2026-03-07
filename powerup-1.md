@@ -10,7 +10,7 @@ A single generic `Powerup` prefab holds a `PowerupEffect` ScriptableObject that 
 | File | Type | Role |
 |------|------|------|
 | `PowerupEffect.cs` | Abstract SO | Base class for all effects |
-| `GainHeartEffect.cs` | Concrete SO | "+1 heart" effect (this step) |
+| `GainHeartEffect.cs` | Concrete SO | "+1 heart" effect |
 | `PowerupSet.cs` | RuntimeSet SO | Tracks all live powerups; same pattern as OrbSet |
 | `Powerup.cs` | MonoBehaviour | Self-registers into PowerupSet; pickup detection |
 | `PowerupManager.cs` | MonoBehaviour | Spawns powerups on timer; cleans up on restart |
