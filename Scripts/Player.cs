@@ -9,6 +9,7 @@ public class Player : MonoBehaviour
 
     [Header("Events")]
     [SerializeField] private GameEvent gameStartEvent;
+    [SerializeField] private GameEvent balanceColorEvent;
 
     private Rigidbody2D rb;
     private PlayerMovement playerMovement;
@@ -24,9 +25,17 @@ public class Player : MonoBehaviour
         splitMaterial.SetFloat("_ColorRatio", colorRatio);
     }
 
-    void OnEnable() => gameStartEvent.OnRaised += OnGameStart;
-    void OnDisable() => gameStartEvent.OnRaised -= OnGameStart;
+    void OnEnable()
+    {
+        gameStartEvent.OnRaised += OnGameStart;
+        balanceColorEvent.OnRaised += OnBalanceColor;
+    }
 
+    void OnDisable()
+    {
+        gameStartEvent.OnRaised -= OnGameStart;
+        balanceColorEvent.OnRaised -= OnBalanceColor;
+    }
     void FixedUpdate()
     {
         playerMovement.Handle();
@@ -69,6 +78,20 @@ public class Player : MonoBehaviour
     {
         transform.position = Vector2.zero;
         colorRatio = Mathf.Clamp01(Constants.DEFAULT_COLOR_RATIO);
+        splitMaterial.SetFloat("_ColorRatio", colorRatio);
+    }
+
+    private void OnBalanceColor()
+    {
+        if (colorRatio > 0.5f)
+        {
+            colorRatio -= Constants.COLLECT_DELTA;
+        }
+        else if (colorRatio < 0.5f)
+        {
+            colorRatio += Constants.COLLECT_DELTA;
+        }
+        colorRatio = Mathf.Clamp01(colorRatio);
         splitMaterial.SetFloat("_ColorRatio", colorRatio);
     }
 }
