@@ -11,4 +11,6 @@ public static class Constants
     public static float SPEED_SCALE_FACTOR = 0.5f;
     // Score
     public static int SCORE_TRESHOLD = 5;
+    // Powerups
+    public static int MAX_HEALTH = 5;
 }
