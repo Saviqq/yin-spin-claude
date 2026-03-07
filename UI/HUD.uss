@@ -18,25 +18,39 @@
     align-items: center;
 }
 
-/* ── Individual heart label ──────────────────────────── */
+/* ── Hearts ─────────────────────────────────────────── */
+
 .heart {
-    font-size: 28px;
-    color: rgb(255, 255, 255);
-    margin-right: 6px;
-    -unity-text-align: middle-center;
+    width: 48px;
+    height: 48px;
+    margin-right: 4px;
+    -unity-background-scale-mode: scale-to-fit;
 }
 
-/* Lost heart — same symbol, dimmed */
+.heart--filled {
+    background-image: url("project://database/Assets/Art/hearth-filled.png");
+}
+
 .heart--lost {
-    color: rgba(255, 255, 255, 0.2);
+    background-image: url("project://database/Assets/Art/hearth-lost.png");
 }
 
-/* ── Score label (top bar, right side) ───────────────── */
-.score-label {
-    font-size: 28px;
-    color: rgb(255, 255, 255);
-    -unity-text-align: middle-right;
+/* ── Score icon ──────────────────────────────────────── */
+
+.score-icon {
+    width: 64px;
+    height: 64px;
+    -unity-background-scale-mode: scale-to-fit;
+    align-items: center;
+    justify-content: center;
+}
+
+.score-value {
+    font-size: 24px;
+    color: rgb(0, 0, 0);
+    -unity-text-align: middle-center;
     -unity-font-style: bold;
+    position: absolute;
 }
 
 /* ── Menu panels (Game over, Pause) ───────────────────────────────── */
