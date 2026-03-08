@@ -20,21 +20,18 @@ public class DifficultyManager : MonoBehaviour
 
     [Header("Events")]
     [SerializeField] private GameEvent gameStartEvent;
-    [SerializeField] private GameEvent expandPlayAreaEvent;
 
     private float initialHalfWidth;
     private float minHalfWidth;
     private float baseSpawnInterval;
     private float baseOrbSpeed;
 
-    private enum ShrinkState { Waiting, Shrinking, Expanding }
+    private enum ShrinkState { Waiting, Shrinking }
     private ShrinkState state;
 
     private float timer;
     private float shrinkFrom;
     private float shrinkTo;
-    private float expandFrom;
-    private float expandTo;
 
     void Start()
     {
@@ -49,14 +46,12 @@ public class DifficultyManager : MonoBehaviour
     {
         gameStartEvent.OnRaised += ResetState;
         score.OnChange += OnScoreChanged;
-        expandPlayAreaEvent.OnRaised += BeginExpand;
     }
 
     void OnDisable()
     {
         gameStartEvent.OnRaised -= ResetState;
         score.OnChange -= OnScoreChanged;
-        expandPlayAreaEvent.OnRaised -= BeginExpand;
     }
 
     void Update()
@@ -82,19 +77,6 @@ public class DifficultyManager : MonoBehaviour
                     timer = 0f;
                 }
                 break;
-
-            case ShrinkState.Expanding:
-                float te = Mathf.Clamp01(timer / shrinkDuration.Value);
-                float newHalfWidthE = Mathf.SmoothStep(expandFrom, expandTo, te);
-                halfWidthPlayArea.Set(newHalfWidthE);
-                UpdateWalls(newHalfWidthE);
-
-                if (te >= 1f)
-                {
-                    state = ShrinkState.Waiting;
-                    timer = 0f;
-                }
-                break;
         }
     }
 
@@ -112,14 +94,6 @@ public class DifficultyManager : MonoBehaviour
         shrinkFrom = halfWidthPlayArea.Value;
         shrinkTo = Mathf.Max(minHalfWidth, shrinkFrom - shrinkStep);
         state = ShrinkState.Shrinking;
-        timer = 0f;
-    }
-
-    private void BeginExpand()
-    {
-        expandFrom = halfWidthPlayArea.Value;
-        expandTo = Mathf.Min(initialHalfWidth, expandFrom + shrinkStep);
-        state = ShrinkState.Expanding;
         timer = 0f;
     }
 
