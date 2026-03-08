@@ -17,6 +17,7 @@ public class OrbManager : MonoBehaviour
     [SerializeField] private GameEvent gameStartEvent;
     [SerializeField] private IntegerEvent spawnOrbEvent;
     [SerializeField] private GameEvent freezeOrbsEvent;
+    [SerializeField] private GameEvent switchOrbColorsEvent;
 
     [Header("Freeze")]
     [SerializeField] private float freezeDuration = 5f;
@@ -37,6 +38,7 @@ public class OrbManager : MonoBehaviour
         gameStartEvent.OnRaised += OnGameStart;
         spawnOrbEvent.OnRaised += OnSpawnBurst;
         freezeOrbsEvent.OnRaised += OnFreezeOrbs;
+        switchOrbColorsEvent.OnRaised += OnSwitchOrbColors;
     }
 
     void OnDisable()
@@ -44,6 +46,7 @@ public class OrbManager : MonoBehaviour
         gameStartEvent.OnRaised -= OnGameStart;
         spawnOrbEvent.OnRaised -= OnSpawnBurst;
         freezeOrbsEvent.OnRaised -= OnFreezeOrbs;
+        switchOrbColorsEvent.OnRaised -= OnSwitchOrbColors;
     }
 
     void Update()
@@ -85,6 +88,12 @@ public class OrbManager : MonoBehaviour
 
         isFrozen = false;
         activeFreezeCoroutine = null;
+    }
+
+    private void OnSwitchOrbColors()
+    {
+        for (int i = 0; i < orbSet.Items.Count; i++)
+            orbSet.Items[i].FlipColor();
     }
 
     private void OnGameStart()
