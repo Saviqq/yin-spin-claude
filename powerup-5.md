@@ -4,12 +4,12 @@
 
 | File | Change |
 |------|--------|
-| `GameEvent.cs` | New: `GameEvent<T>` abstract generic SO base |
-| `IntegerEvent.cs` | New: `IntegerEvent : GameEvent<int>` concrete SO |
-| `Orb.cs` | Add `Stop()` / `Resume()` public methods |
-| `OrbManager.cs` | Subscribe to spawn burst + freeze events; freeze coroutine; pause spawning during freeze |
-| `SpawnBurstEffect.cs` | New SO — raises `IntegerEvent` with random orb count |
-| `FreezeOrbsEffect.cs` | New SO — raises `GameEvent` to trigger freeze |
+| `Scripts/SO/GameEvent.cs` | Append `GameEvent<T>` abstract generic SO base below existing class |
+| `Scripts/SO/IntegerEvent.cs` | New: `IntegerEvent : GameEvent<int>` concrete SO |
+| `Scripts/Orb.cs` | Add `Stop()` / `Resume()` public methods |
+| `Scripts/OrbManager.cs` | Subscribe to spawn burst + freeze events; freeze coroutine; pause spawning during freeze |
+| `Scripts/SO/Powerup/SpawnBurstEffect.cs` | New SO — raises `IntegerEvent` with random orb count |
+| `Scripts/SO/Powerup/FreezeOrbsEffect.cs` | New SO — raises `GameEvent` to trigger freeze |
 
 ---
 
@@ -48,7 +48,7 @@ GameEvent<T>   (abstract, no CreateAssetMenu)
 
 ---
 
-## `GameEvent.cs` (updated — add generic base below existing class)
+## `Scripts/SO/GameEvent.cs` (updated — add generic base below existing class)
 
 ```csharp
 using System;
@@ -78,7 +78,7 @@ public abstract class GameEvent<T> : ScriptableObject
 
 ---
 
-## `IntegerEvent.cs` *(new — `Scripts/` folder)*
+## `IntegerEvent.cs` *(new — `Scripts/SO/` folder)*
 
 ```csharp
 using UnityEngine;
@@ -89,7 +89,7 @@ public class IntegerEvent : GameEvent<int> { }
 
 ---
 
-## `SpawnBurstEffect.cs` *(new — `Scripts/SO/` folder)*
+## `SpawnBurstEffect.cs` *(new — `Scripts/SO/Powerup/` folder)*
 
 ```csharp
 using UnityEngine;
@@ -110,7 +110,7 @@ public class SpawnBurstEffect : PowerupEffect
 
 ---
 
-## `FreezeOrbsEffect.cs` *(new — `Scripts/SO/` folder)*
+## `FreezeOrbsEffect.cs` *(new — `Scripts/SO/Powerup/` folder)*
 
 ```csharp
 using UnityEngine;

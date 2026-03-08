@@ -73,6 +73,12 @@ public class Orb : MonoBehaviour
         rb.linearVelocity = direction.normalized * speed;
     }
 
+    public void FlipColor()
+    {
+        IsWhite = !IsWhite;
+        GetComponent<SpriteRenderer>().color = IsWhite ? Color.white : Color.black;
+    }
+
     public void Stop()
     {
         storedVelocity = rb.linearVelocity;
