@@ -12,7 +12,7 @@ public class Orb : MonoBehaviour
 
     private Rigidbody2D rb;
     private float orbRadius;
-
+    private Vector2 storedVelocity;
 
     void Awake()
     {
@@ -71,5 +71,16 @@ public class Orb : MonoBehaviour
         IsWhite = isWhite;
         GetComponent<SpriteRenderer>().color = isWhite ? Color.white : Color.black;
         rb.linearVelocity = direction.normalized * speed;
+    }
+
+    public void Stop()
+    {
+        storedVelocity = rb.linearVelocity;
+        rb.linearVelocity = Vector2.zero;
+    }
+
+    public void Resume()
+    {
+        rb.linearVelocity = storedVelocity;
     }
 }

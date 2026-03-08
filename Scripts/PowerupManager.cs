@@ -5,7 +5,6 @@ public class PowerupManager : MonoBehaviour
     [Header("Spawning")]
     [SerializeField] private Powerup powerupPrefab;
     [SerializeField] private PowerupEffect[] effects;
-    [SerializeField] private FloatValue powerupSpawnInterval;
     [SerializeField] private FloatValue halfWidthPlayArea;
     [SerializeField] private FloatValue halfHeightPlayArea;
 
@@ -29,7 +28,7 @@ public class PowerupManager : MonoBehaviour
     void Update()
     {
         timer += Time.deltaTime;
-        if (timer >= powerupSpawnInterval.Value)
+        if (timer >= Constants.POWERUP_INTERVAL)
         {
             timer = 0f;
             SpawnPowerup();

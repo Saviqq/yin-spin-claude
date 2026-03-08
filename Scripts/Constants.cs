@@ -12,5 +12,6 @@ public static class Constants
     // Score
     public static int SCORE_TRESHOLD = 5;
     // Powerups
+    public static float POWERUP_INTERVAL = 10f;
     public static int MAX_HEALTH = 5;
 }
