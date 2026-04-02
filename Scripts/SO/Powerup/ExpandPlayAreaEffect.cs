@@ -5,5 +5,9 @@ public class ExpandPlayAreaEffect : PowerupEffect
 {
     [SerializeField] private GameEvent expandPlayAreaEvent;
 
-    public override void Apply() => expandPlayAreaEvent.Raise();
+    public override void Apply()
+    {
+        expandPlayAreaEvent.Raise();
+        RaiseMessage();
+    }
 }

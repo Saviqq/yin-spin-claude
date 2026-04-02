@@ -5,5 +5,9 @@ public class ShrinkPlayerEffect : PowerupEffect
 {
     [SerializeField] private GameEvent shrinkPlayerEvent;
 
-    public override void Apply() => shrinkPlayerEvent.Raise();
+    public override void Apply()
+    {
+        shrinkPlayerEvent.Raise();
+        RaiseMessage();
+    }
 }

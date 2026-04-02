@@ -8,5 +8,6 @@ public class GainHeartEffect : PowerupEffect
     public override void Apply()
     {
         health.Set(Mathf.Min(health.Value + 1, Constants.MAX_HEALTH));
+        RaiseMessage();
     }
 }

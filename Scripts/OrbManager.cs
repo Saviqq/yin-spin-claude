@@ -3,15 +3,15 @@ using UnityEngine;
 
 public class OrbManager : MonoBehaviour
 {
-    [Header("Spawner config")]
-    [SerializeField] private Orb orbPrefab;
+    [Header("Game Area")]
     [SerializeField] private FloatValue halfHeightPlayArea;
     [SerializeField] private FloatValue halfWidthPlayArea;
-    [SerializeField] private FloatValue spawnInterval;
-    [SerializeField] private FloatValue orbSpeed;
 
     [Header("Orbs")]
+    [SerializeField] private Orb orbPrefab;
     [SerializeField] private OrbSet orbSet;
+    [SerializeField] private IntegerValue spawnCount;
+    [SerializeField] private FloatValue orbSpeed;
 
     [Header("Events")]
     [SerializeField] private GameEvent gameStartEvent;
@@ -30,7 +30,7 @@ public class OrbManager : MonoBehaviour
     void Start()
     {
         orbSpawner = new OrbSpawner(orbPrefab, halfHeightPlayArea, halfWidthPlayArea);
-        timer = spawnInterval.Value;
+        timer = Constants.SPAWN_INTERVAL;
     }
 
     void OnEnable()
@@ -54,10 +54,13 @@ public class OrbManager : MonoBehaviour
         if (isFrozen) return;
 
         timer += Time.deltaTime;
-        if (timer >= spawnInterval.Value)
+        if (timer >= Constants.SPAWN_INTERVAL)
         {
             timer = 0f;
-            orbSpawner.Spawn(orbSpeed.Value);
+            for (int i = 0; i < spawnCount.Value; i++)
+            {
+                orbSpawner.Spawn(orbSpeed.Value);
+            }
         }
     }
 
@@ -109,6 +112,6 @@ public class OrbManager : MonoBehaviour
         for (int i = orbSet.Items.Count - 1; i >= 0; i--)
             Destroy(orbSet.Items[i].gameObject);
 
-        timer = spawnInterval.Value;
+        timer = Constants.SPAWN_INTERVAL;
     }
 }

@@ -10,5 +10,6 @@ public class SpawnBurstEffect : PowerupEffect
     public override void Apply()
     {
         spawnOrbEvent.Raise(Random.Range(minOrbs, maxOrbs + 1));
+        RaiseMessage();
     }
 }

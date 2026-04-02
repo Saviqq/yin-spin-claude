@@ -8,6 +8,9 @@ public class ClearOrbsEffect : PowerupEffect
     public override void Apply()
     {
         for (int i = orbSet.Items.Count - 1; i >= 0; i--)
+        {
             Destroy(orbSet.Items[i].gameObject);
+        }
+        RaiseMessage();
     }
 }

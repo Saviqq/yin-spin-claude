@@ -5,5 +5,9 @@ public class SwitchOrbColorsEffect : PowerupEffect
 {
     [SerializeField] private GameEvent switchOrbColorsEvent;
 
-    public override void Apply() => switchOrbColorsEvent.Raise();
+    public override void Apply()
+    {
+        switchOrbColorsEvent.Raise();
+        RaiseMessage();
+    }
 }

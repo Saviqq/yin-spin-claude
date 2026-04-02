@@ -9,5 +9,6 @@ public class GainScoreEffect : PowerupEffect
     public override void Apply()
     {
         score.Set(score.Value + amount);
+        RaiseMessage();
     }
 }

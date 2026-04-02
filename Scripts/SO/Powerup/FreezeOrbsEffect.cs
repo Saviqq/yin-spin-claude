@@ -5,5 +5,9 @@ public class FreezeOrbsEffect : PowerupEffect
 {
     [SerializeField] private GameEvent freezeOrbsEvent;
 
-    public override void Apply() => freezeOrbsEvent.Raise();
+    public override void Apply()
+    {
+        freezeOrbsEvent.Raise();
+        RaiseMessage();
+    }
 }

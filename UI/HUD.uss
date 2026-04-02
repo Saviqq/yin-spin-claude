@@ -5,16 +5,27 @@
     background-color: rgb(0, 0, 0);
     flex-direction: row;
     align-items: center;
-    justify-content: space-between;
-    padding-left: 24px;
-    padding-right: 24px;
+    padding: 20px;
     border-bottom-width: 2px;
     border-bottom-color: rgb(255, 255, 255);
 }
 
 /* ── Section wrapper (hearts left, score right) ──────── */
 .hud-section {
+    height: 100%;
     flex-direction: row;
+    flex: 1;
+}
+
+.flex-start {
+    justify-content: flex-start;
+}
+
+.flex-end {
+    justify-content: flex-end;
+}
+
+.align-center {
     align-items: center;
 }
 
@@ -29,10 +40,21 @@
 
 .heart--filled {
     background-image: url("project://database/Assets/Art/hearth-filled.png");
+
 }
 
 .heart--lost {
     background-image: url("project://database/Assets/Art/hearth-lost.png");
+}
+
+/* ── Powerup notification ─────────────────────────────── */
+.powerup-label {
+    flex-grow: 1;
+    font-size: 36px;
+    color: rgb(255, 255, 255);
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    display: none;
 }
 
 /* ── Score icon ──────────────────────────────────────── */

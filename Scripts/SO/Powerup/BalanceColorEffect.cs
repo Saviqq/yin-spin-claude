@@ -8,5 +8,6 @@ public class BalanceColorEffect : PowerupEffect
     public override void Apply()
     {
         balanceColorEvent.Raise();
+        RaiseMessage();
     }
 }
