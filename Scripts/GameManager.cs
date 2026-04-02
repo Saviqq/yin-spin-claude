@@ -1,5 +1,6 @@
 using UnityEngine;
 
+[RequireComponent(typeof(AudioSource))]
 public class GameManager : MonoBehaviour
 {
     [Header("Play Area")]
@@ -9,6 +10,7 @@ public class GameManager : MonoBehaviour
     [Header("Player")]
     [SerializeField] private IntegerValue health;
     [SerializeField] private IntegerValue score;
+    // [SerializeField] private AudioClip backgroundMusic;
 
     [Header("Events")]
     [SerializeField] private GameEvent gameOverEvent;
@@ -17,11 +19,14 @@ public class GameManager : MonoBehaviour
     [SerializeField] private GameEvent gameResumedEvent;
     [SerializeField] private GameEvent resumeButtonClickedEvent;
 
+    private AudioSource audioSource;
+
     private bool isPaused = false;
     private bool isGameOver = false;
 
     void Awake()
     {
+        audioSource = GetComponent<AudioSource>();
         OnGameStart();
     }
 
@@ -71,7 +76,9 @@ public class GameManager : MonoBehaviour
     private void OnHealthChanged(int current)
     {
         if (current <= 0)
+        {
             gameOverEvent.Raise();
+        }
     }
 
     private void OnGameStart()
@@ -81,6 +88,7 @@ public class GameManager : MonoBehaviour
         Time.timeScale = 1f;
         Cursor.visible = false;
 
+        audioSource.Play();
         health.Reset();
         score.Reset();
         halfHeightPlayArea.Set(Camera.main.orthographicSize);
@@ -89,6 +97,7 @@ public class GameManager : MonoBehaviour
 
     private void OnGameOver()
     {
+        audioSource.Stop();
         isGameOver = true;
         Time.timeScale = 0f;
         Cursor.visible = true;

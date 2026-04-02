@@ -16,6 +16,9 @@ public class Player : MonoBehaviour
     [Header("Audio")]
     [SerializeField] private AudioClip collectSFX;
     [SerializeField] private AudioClip damageSFX;
+    [SerializeField] private AudioClip powerupSFX;
+    [SerializeField] private AudioClip gameOverSFX;
+
 
     private Rigidbody2D rb;
     private AudioSource audioSource;
@@ -55,6 +58,20 @@ public class Player : MonoBehaviour
 
     void OnTriggerEnter2D(Collider2D other)
     {
+        OnPowerupEnter(other);
+        OnOrbEnter(other);
+    }
+
+    private void OnPowerupEnter(Collider2D other)
+    {
+        Powerup powerup = other.GetComponent<Powerup>();
+        if (powerup == null) return;
+
+        audioSource.PlayOneShot(powerupSFX);
+    }
+
+    private void OnOrbEnter(Collider2D other)
+    {
         Orb orb = other.GetComponent<Orb>();
         if (orb == null) return;
 
@@ -85,7 +102,16 @@ public class Player : MonoBehaviour
         if (activeInvulnerabilityCoroutine == null && health.Value > 0)
         {
             health.Set(health.Value - 1);
-            audioSource.PlayOneShot(damageSFX);
+
+            if (health.Value > 0)
+            {
+                audioSource.PlayOneShot(damageSFX);
+            }
+            else
+            {
+                audioSource.PlayOneShot(gameOverSFX);
+            }
+
             activeInvulnerabilityCoroutine = StartCoroutine(FlashAndBeInvulnerable());
         }
     }
